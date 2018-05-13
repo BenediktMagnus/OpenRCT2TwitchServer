@@ -1,0 +1,10 @@
+{
+    "name": "OpenRCT2TwitchServer",
+    "version": "0.1.0",
+    "description": "Twitch integration server software for OpenRCT2.",
+    "main": "OpenRCT2TwitchServer.js",
+    "author": "Benedikt Magnus",
+    "dependencies": {
+        "tmi.js": ""
+    }
+}
