@@ -60,12 +60,19 @@ function Channel (AParams, ACallback)
     if (AParams[1] == 'audience')
         Client.api({url: 'http://tmi.twitch.tv/group/user/' + AParams[0].toLowerCase() + '/chatters'}, function(Err, Res, Body)
             {
-                let Viewers = Body.chatters.viewers;
-                let Output = new Array(Viewers.length);
+                let Output = new Array(Body.chatter_count);
+                let Current = 0;
 
-                for (let i = 0; i < Viewers.length; i++)
+                for (let ChatterGroup in Body.chatters)
                 {
-                    Output[i] = { name: Viewers[i], inChat: true, isFollower: false, isMod: false };
+                    let Chatters = Body.chatters[ChatterGroup];
+                    let IsModGroup = (ChatterGroup != 'viewers');
+
+                    for (let i = 0; i < Chatters.length; i++)
+                    {
+                        Output[Current] = { name: Chatters[i], inChat: true, isFollower: false, isMod: IsModGroup };
+                        Current++;
+                    }
                 }
 
                 ACallback(Output);
