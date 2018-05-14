@@ -1,5 +1,7 @@
 const Config = require('./config.json');
+const TwitchAPI = require('./TwitchAPI.js');
 var Client;
+var IdList = new Map();
 
 /**
  * Initialises the API functionality.
@@ -8,6 +10,7 @@ var Client;
 exports.Initialise = function (AClient)
 {
     Client = AClient;
+    TwitchAPI.Initialise(AClient);
 };
 
 /**
@@ -43,9 +46,15 @@ exports.Request = function (ARequest, ACallback)
  */
 function Join (AParams, ACallback)
 {
-    Client.join(AParams[0].toLowerCase()).then(function (Data)
+    let ChannelName = AParams[0].toLowerCase();
+
+    Client.join(ChannelName).then(function (Data)
         {
-            ACallback({ status: 200 });
+            GetUserIdByName(ChannelName, function (Success)
+                {
+                    ACallback( Success ? { status: 200 } : { status: 500 } );
+                }
+            );
         }
     ).catch(function (Err)
         {
@@ -65,14 +74,20 @@ function Channel (AParams, ACallback)
     switch (AParams[1])
     {
         case 'audience':
-            Client.api({url: 'http://tmi.twitch.tv/group/user/' + AParams[0].toLowerCase() + '/chatters'}, function(Err, Res, Body)
+            TwitchAPI.GetChatters(AParams[0].toLowerCase(), function (ErrorHappened, ChattersObject, ChattersCount)
                 {
-                    let Output = new Array(Body.chatter_count);
+                    if (ErrorHappened)
+                    {
+                        ACallback({ status: 500 });
+                        return;
+                    }
+
+                    let Output = new Array(ChattersCount);
                     let Current = 0;
 
-                    for (let ChatterGroup in Body.chatters)
+                    for (let ChatterGroup in ChattersObject)
                     {
-                        let Chatters = Body.chatters[ChatterGroup];
+                        let Chatters = ChattersObject[ChatterGroup];
                         let IsModGroup = (ChatterGroup != 'viewers');
 
                         for (let i = 0; i < Chatters.length; i++)
@@ -89,6 +104,49 @@ function Channel (AParams, ACallback)
         default:
             UnknownRequest('Channel->' + AParams.join('/'), ACallback);
     }
+}
+
+/**
+ * Gets the user id by name and saves it in the map.
+ * @param {String} AChannelName The name of the channel/user in LOWERCASE.
+ * @param {Function} ACallback Called when finished with success as boolean parameter.
+ */
+function GetUserIdByName (AChannelName, ACallback)
+{
+    //Get User ID of the channel owner for later use in the Twitch API:
+    TwitchAPI.LoginsToIds([AChannelName], function (ErrorHappened, Ids)
+        {
+            if (ErrorHappened)
+                ACallback(false);
+            else
+            {
+                var User = {
+                    Name: AChannelName,
+                    Id: Ids[0],
+                    Active: true,
+                    Interval: undefined
+                };
+
+                IdList.set(AChannelName, User);
+                
+                //Use an interval to check if the client lost connection:
+                User.Interval = setInterval(function ()
+                    {
+                        if (!User.Active)
+                        {
+                            IdList.delete(User.ChannelName);
+                            clearInterval(User.Interval);
+                        }
+                        else
+                            User.Active = false;
+                    },
+                    60000
+                );
+
+                ACallback(true);
+            }
+        }
+    );
 }
 
 /**
