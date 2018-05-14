@@ -25,9 +25,14 @@ exports.Request = function (ARequest, ACallback)
 
     switch (Command)
     {
-        case 'join': Join(Params, ACallback); break;
-        case 'channel': Channel(Params, ACallback); break;
-        default: ACallback({ status: 500 });
+        case 'join':
+            Join(Params, ACallback);
+            break;
+        case 'channel':
+            Channel(Params, ACallback);
+            break;
+        default:
+            UnknownRequest(ARequest, ACallback);
     }
 }
 
@@ -51,31 +56,48 @@ function Join (AParams, ACallback)
 };
 
 /**
- * Handles channel functionality like returning the viewer list.
- * @param {*} AParams The params given by the caller.
- * @param {*} ACallback The callback function called when the return data is available. 
+ * Handles channel specific functionality like returning the viewer list.
+ * @param {Array} AParams The params given by the caller.
+ * @param {Function} ACallback The callback function called when the return data is available. 
  */
 function Channel (AParams, ACallback)
 {
-    if (AParams[1] == 'audience')
-        Client.api({url: 'http://tmi.twitch.tv/group/user/' + AParams[0].toLowerCase() + '/chatters'}, function(Err, Res, Body)
-            {
-                let Output = new Array(Body.chatter_count);
-                let Current = 0;
-
-                for (let ChatterGroup in Body.chatters)
+    switch (AParams[1])
+    {
+        case 'audience':
+            Client.api({url: 'http://tmi.twitch.tv/group/user/' + AParams[0].toLowerCase() + '/chatters'}, function(Err, Res, Body)
                 {
-                    let Chatters = Body.chatters[ChatterGroup];
-                    let IsModGroup = (ChatterGroup != 'viewers');
+                    let Output = new Array(Body.chatter_count);
+                    let Current = 0;
 
-                    for (let i = 0; i < Chatters.length; i++)
+                    for (let ChatterGroup in Body.chatters)
                     {
-                        Output[Current] = { name: Chatters[i], inChat: true, isFollower: false, isMod: IsModGroup };
-                        Current++;
-                    }
-                }
+                        let Chatters = Body.chatters[ChatterGroup];
+                        let IsModGroup = (ChatterGroup != 'viewers');
 
-                ACallback(Output);
-            }
-        ); 
+                        for (let i = 0; i < Chatters.length; i++)
+                        {
+                            Output[Current] = { name: Chatters[i], inChat: true, isFollower: false, isMod: IsModGroup };
+                            Current++;
+                        }
+                    }
+
+                    ACallback(Output);
+                }
+            );
+            break;
+        default:
+            UnknownRequest('Channel->' + AParams.join('/'), ACallback);
+    }
+}
+
+/**
+ * Handles unknown requests.
+ * @param {String} ARequest A string that represents the request.
+ * @param {Function} ACallback The callback function called when the return data is available. 
+ */
+function UnknownRequest (ARequest, ACallback)
+{
+    console.log('Unknown request: ' + ARequest);
+    ACallback({ status: 500 });
 }
