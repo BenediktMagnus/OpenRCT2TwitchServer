@@ -27,12 +27,14 @@ exports.GetChatters = function (AChannel, ACallback)
 
 exports.GetFollowers = function (AChannel, ACallback)
 {
+    const MaxElements = 100;
+
     let Pagination = '';
     if (AChannel.Pagination != '')
         Pagination = '&after=' + AChannel.Pagination;
 
     Client.api({
-        url: 'https://api.twitch.tv/helix/users/follows?to_id=' + AChannel.Id + '&first=100' + Pagination,
+        url: 'https://api.twitch.tv/helix/users/follows?to_id=' + AChannel.Id + '&first=' + MaxElements + Pagination,
         headers: {
             'Client-ID': Config.clientid
         }
@@ -45,7 +47,8 @@ exports.GetFollowers = function (AChannel, ACallback)
                 for (i = 0; i < IdList.length; i++)
                     IdList[i] = Body.data[i]['from_id'];
 
-                AChannel.Pagination = Body.pagination.cursor;
+                //Set next pagination. When we hit the end, reset.
+                AChannel.Pagination = (IdList.length == MaxElements ? Body.pagination.cursor : '');
 
                 IdsToLogins(IdList, ACallback);
             }
