@@ -1,0 +1,6 @@
+{
+	"name": "BotName",
+	"oauth": "oauth:xxx",
+	"clientid": "abc",
+	"port": 11780
+}
