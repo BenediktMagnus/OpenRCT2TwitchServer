@@ -89,72 +89,75 @@ function ChannelRequest (AParams, ACallback)
     switch (AParams[1])
     {
         case 'audience':
-            {
-                let Result = [];
-                let ResultAddedCounter = 0; //Used to determine when all data is gathered.
-
-                TwitchAPI.GetChatters(Channel, function (ErrorHappened, ChattersObject, ChattersCount)
-                    {
-                        if (ErrorHappened)
-                        {
-                            AddToResult([]);
-                            return;
-                        }
-
-                        let Output = new Array(ChattersCount);
-                        let Current = 0;
-
-                        for (let ChatterGroup in ChattersObject)
-                        {
-                            let Chatters = ChattersObject[ChatterGroup];
-                            let IsModGroup = (ChatterGroup != 'viewers');
-
-                            for (let i = 0; i < Chatters.length; i++)
-                            {
-                                Output[Current] = { name: Chatters[i], inChat: true, isFollower: false, isMod: IsModGroup };
-                                Current++;
-                            }
-                        }
-
-                        AddToResult(Output);
-                    }
-                );
-
-                TwitchAPI.GetFollowers(Channel, function (ErrorHappened, FollowersObject)
-                    {
-                        if (ErrorHappened)
-                        {
-                            AddToResult([]);
-                            return;
-                        }
-                        
-                        let Output = new Array(FollowersObject);
-                        for (let i = 0; i < FollowersObject.length; i++)
-                            Output[i] = { name: FollowersObject[i], inChat: false, isFollower: true, isMod: false };
-
-                        AddToResult(Output);
-                    }
-                );
-
-                function AddToResult (AOutput)
-                {
-                    if (AOutput.length > 0)
-                        Result = Result.concat(AOutput);
-
-                    ResultAddedCounter++;
-
-                    if (ResultAddedCounter >= 2)
-                    {
-                        if (Result.length == 0)
-                            Result = { status: 500 };
-
-                        ACallback(Result);
-                    }
-                }
-            }
+            HandleAudienceRequest();
             break;
         default:
             UnknownRequest('Channel->' + AParams.join('/'), ACallback);
+    }
+
+    function HandleAudienceRequest ()
+    {
+        let Result = [];
+        let ResultAddedCounter = 0; //Used to determine when all data is gathered.
+
+        TwitchAPI.GetChatters(Channel, function (ErrorHappened, ChattersObject, ChattersCount)
+            {
+                if (ErrorHappened)
+                {
+                    AddToResult([]);
+                    return;
+                }
+
+                let Output = new Array(ChattersCount);
+                let Current = 0;
+
+                for (let ChatterGroup in ChattersObject)
+                {
+                    let Chatters = ChattersObject[ChatterGroup];
+                    let IsModGroup = (ChatterGroup != 'viewers');
+
+                    for (let i = 0; i < Chatters.length; i++)
+                    {
+                        Output[Current] = { name: Chatters[i], inChat: true, isFollower: false, isMod: IsModGroup };
+                        Current++;
+                    }
+                }
+
+                AddToResult(Output);
+            }
+        );
+
+        TwitchAPI.GetFollowers(Channel, function (ErrorHappened, FollowersObject)
+            {
+                if (ErrorHappened)
+                {
+                    AddToResult([]);
+                    return;
+                }
+                        
+                let Output = new Array(FollowersObject);
+                for (let i = 0; i < FollowersObject.length; i++)
+                    Output[i] = { name: FollowersObject[i], inChat: false, isFollower: true, isMod: false };
+
+                AddToResult(Output);
+            }
+        );
+
+        function AddToResult (AOutput)
+        {
+            if (AOutput.length > 0)
+                Result = Result.concat(AOutput);
+
+            ResultAddedCounter++;
+
+            if (ResultAddedCounter >= 2)
+            {
+                if (Result.length == 0)
+                    Result = { status: 500 };
+
+                ACallback(Result);
+            }
+        }
     }
 }
 
