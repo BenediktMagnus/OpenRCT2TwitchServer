@@ -1,6 +1,9 @@
 const Config = require('./config.json');
 var Client;
 
+const ParameterLogin = 'login';
+const ParameterId = 'id';
+
 /**
  * Initialises the API functionality.
  * @param {*} AClient The client for Twitch connection.
@@ -24,17 +27,31 @@ exports.GetChatters = function (AChannelName, ACallback)
 
 exports.LoginsToIds = function (ALogins, ACallback)
 {
-    let LoginsString = '';
-    for (let i = 0; i < ALogins.length; i++)
+    GetLoginOrId(AIds, ParameterLogin, ACallback);
+};
+
+exports.IdsToLogins = function (AIds, ACallback)
+{
+    GetLoginOrId(AIds, ParameterId, ACallback);
+};
+
+function GetLoginOrId (ALoginOrIdList, AParameterString, ACallback)
+{
+    //Combine the list to a parameter string for the GET request:
+    let CombinedParameterString = '';
+    for (let i = 0; i < ALoginOrIdList.length; i++)
     {
         if (i > 0)
-            LoginsString += '&';
-        
-        LoginsString += 'login=' + ALogins[i];
+            CombinedParameterString += '&';
+
+        CombinedParameterString += AParameterString + '=' + ALoginOrIdList[i];
     }
 
+    let ResultParameterString = ((AParameterString == ParameterLogin) ? ParameterId : ParameterLogin);
+
+    //Make the Twitch API request:
     Client.api({
-        url: 'https://api.twitch.tv/helix/users?' + LoginsString,
+        url: 'https://api.twitch.tv/helix/users?' + CombinedParameterString,
         headers: {
             'Client-ID': Config.clientid
         }
@@ -42,14 +59,14 @@ exports.LoginsToIds = function (ALogins, ACallback)
         {
             if (Err == null && Body != undefined && Body.data != undefined && Body.data.length > 0)
             {
-                let Ids = new Array(Body.data.length);
-                for (let i = 0; i < Ids.length; i++)
-                    Ids[i] = Body.data[i].id;
+                let ResultList = new Array(Body.data.length);
+                for (let i = 0; i < ResultList.length; i++)
+                    ResultList[i] = Body.data[i][ResultParameterString];
 
-                ACallback(false, Ids);
+                ACallback(false, ResultList);
             }
             else
                 ACallback(true);
         }
     );
-};
+}
