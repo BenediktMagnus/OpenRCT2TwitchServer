@@ -11,6 +11,21 @@ exports.Initialise = function (AClient)
 {
     Client = AClient;
     TwitchAPI.Initialise(AClient);
+
+    Client.on('chat', function (AChannel, AData, AMessage, AIsOwnMessage)
+        {
+            let Command = '!news';
+
+            if (AChannel.startsWith('#'))
+                AChannel = AChannel.substr(1);
+            
+            //Skip irrelevant messages:
+            if (!AIsOwnMessage && AMessage.startsWith('!') && (AMessage.length > Command.length + 1) && AMessage.startsWith(Command + ' '))
+                if (ChannelList.has(AChannel))
+                    ChannelList.get(AChannel).Messages.push({ message: AMessage });
+
+        }
+    );
 };
 
 /**
@@ -91,6 +106,9 @@ function ChannelRequest (AParams, ACallback)
         case 'audience':
             HandleAudienceRequest();
             break;
+        case 'messages':
+            HandleMessageRequest();
+            break;
         default:
             UnknownRequest('Channel->' + AParams.join('/'), ACallback);
     }
@@ -159,6 +177,12 @@ function ChannelRequest (AParams, ACallback)
             }
         }
     }
+
+    function HandleMessageRequest ()
+    {
+        ACallback(Channel.Messages);
+        Channel.Messages = [];
+    }
 }
 
 /**
@@ -180,6 +204,7 @@ function AddChannelToList (AChannelName, ACallback)
                     Id: Ids[0],
                     Active: true,
                     Pagination: '',
+                    Messages: [],
                     Interval: undefined
                 };
 
