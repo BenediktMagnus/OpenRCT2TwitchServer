@@ -1,4 +1,4 @@
-const Config = require('./config.json');
+const Config = require('../config/config.json');
 var Client;
 
 const ParameterLogin = 'login';

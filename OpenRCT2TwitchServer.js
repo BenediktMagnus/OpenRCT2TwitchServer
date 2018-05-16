@@ -1,6 +1,6 @@
 console.log('Starting Twitch integration server for OpenRCT2...');
 
-const Config = require('./config.json');
+const Config = require('./config/config.json');
 const tmi = require("tmi.js");
 
 Client = new tmi.client({
@@ -22,7 +22,7 @@ Client.connect().then(function ()
         console.log('Connected with Twitch.');
 
         const HTTP = require('http');
-        const API = require('./API.js');
+        const API = require('./scripts/API.js');
         API.Initialise(Client);
 
         console.log('Server initialised.');

@@ -1,4 +1,4 @@
-const Config = require('./config.json');
+const Config = require('../config/config.json');
 const TwitchAPI = require('./TwitchAPI.js');
 var Client;
 var ChannelList = new Map();
