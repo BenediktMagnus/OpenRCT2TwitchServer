@@ -13,9 +13,9 @@ exports.Initialise = function (AClient)
     Client = AClient;
 };
 
-exports.GetChatters = function (AChannelName, ACallback)
+exports.GetChatters = function (AChannel, ACallback)
 {
-    Client.api({ url: 'http://tmi.twitch.tv/group/user/' + AChannelName + '/chatters' }, function(Err, Res, Body)
+    Client.api({ url: 'http://tmi.twitch.tv/group/user/' + AChannel.Name + '/chatters' }, function(Err, Res, Body)
         {
             if (Err != null || Body == undefined)
                 ACallback(true);
@@ -25,15 +25,47 @@ exports.GetChatters = function (AChannelName, ACallback)
     );
 };
 
-exports.LoginsToIds = function (ALogins, ACallback)
+exports.GetFollowers = function (AChannel, ACallback)
 {
-    GetLoginOrId(AIds, ParameterLogin, ACallback);
+    let Pagination = '';
+    if (AChannel.Pagination != '')
+        Pagination = '&after=' + AChannel.Pagination;
+
+    Client.api({
+        url: 'https://api.twitch.tv/helix/users/follows?to_id=' + AChannel.Id + '&first=100' + Pagination,
+        headers: {
+            'Client-ID': Config.clientid
+        }
+    }, function (Err, Res, Body)
+        {
+            if (Err == null && Body != undefined && Body.data != undefined && Body.data.length > 0)
+            {
+                let IdList = new Array(Body.data.length);
+
+                for (i = 0; i < IdList.length; i++)
+                    IdList[i] = Body.data[i]['from_id'];
+
+                AChannel.Pagination = Body.pagination.cursor;
+
+                IdsToLogins(IdList, ACallback);
+            }
+            else
+                ACallback(true);
+        }
+    );
 };
 
-exports.IdsToLogins = function (AIds, ACallback)
+exports.LoginsToIds = LoginsToIds;
+exports.IdsToLogins = IdsToLogins;
+
+function LoginsToIds (ALogins, ACallback)
+{
+    GetLoginOrId(ALogins, ParameterLogin, ACallback);
+}
+function IdsToLogins (AIds, ACallback)
 {
     GetLoginOrId(AIds, ParameterId, ACallback);
-};
+}
 
 function GetLoginOrId (ALoginOrIdList, AParameterString, ACallback)
 {

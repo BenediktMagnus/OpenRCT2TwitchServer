@@ -1,7 +1,7 @@
 const Config = require('./config.json');
 const TwitchAPI = require('./TwitchAPI.js');
 var Client;
-var IdList = new Map();
+var ChannelList = new Map();
 
 /**
  * Initialises the API functionality.
@@ -32,7 +32,7 @@ exports.Request = function (ARequest, ACallback)
             Join(Params, ACallback);
             break;
         case 'channel':
-            Channel(Params, ACallback);
+            ChannelRequest(Params, ACallback);
             break;
         default:
             UnknownRequest(ARequest, ACallback);
@@ -50,7 +50,7 @@ function Join (AParams, ACallback)
 
     Client.join(ChannelName).then(function (Data)
         {
-            GetUserIdByName(ChannelName, function (Success)
+            AddChannelToList(ChannelName, function (Success)
                 {
                     ACallback( Success ? { status: 200 } : { status: 500 } );
                 }
@@ -69,37 +69,89 @@ function Join (AParams, ACallback)
  * @param {Array} AParams The params given by the caller.
  * @param {Function} ACallback The callback function called when the return data is available. 
  */
-function Channel (AParams, ACallback)
+function ChannelRequest (AParams, ACallback)
 {
+    let ChannelName = AParams[0].toLowerCase();
+    let Channel;
+
+    //If we aren't logged in we have to login first:
+    if (!ChannelList.has(ChannelName))
+    {
+        Join([ChannelName], () => { ChannelRequest(AParams, ACallback); });
+        return;
+    }
+    else //Otherwise we have to set the channel to active to keep it logged in:
+    {
+        Channel = ChannelList.get(ChannelName);
+        Channel.Active = true;
+    }
+
     switch (AParams[1])
     {
         case 'audience':
-            TwitchAPI.GetChatters(AParams[0].toLowerCase(), function (ErrorHappened, ChattersObject, ChattersCount)
-                {
-                    if (ErrorHappened)
+            {
+                let Result = [];
+                let ResultAddedCounter = 0; //Used to determine when all data is gathered.
+
+                TwitchAPI.GetChatters(Channel, function (ErrorHappened, ChattersObject, ChattersCount)
                     {
-                        ACallback({ status: 500 });
-                        return;
-                    }
-
-                    let Output = new Array(ChattersCount);
-                    let Current = 0;
-
-                    for (let ChatterGroup in ChattersObject)
-                    {
-                        let Chatters = ChattersObject[ChatterGroup];
-                        let IsModGroup = (ChatterGroup != 'viewers');
-
-                        for (let i = 0; i < Chatters.length; i++)
+                        if (ErrorHappened)
                         {
-                            Output[Current] = { name: Chatters[i], inChat: true, isFollower: false, isMod: IsModGroup };
-                            Current++;
+                            AddToResult([]);
+                            return;
                         }
-                    }
 
-                    ACallback(Output);
+                        let Output = new Array(ChattersCount);
+                        let Current = 0;
+
+                        for (let ChatterGroup in ChattersObject)
+                        {
+                            let Chatters = ChattersObject[ChatterGroup];
+                            let IsModGroup = (ChatterGroup != 'viewers');
+
+                            for (let i = 0; i < Chatters.length; i++)
+                            {
+                                Output[Current] = { name: Chatters[i], inChat: true, isFollower: false, isMod: IsModGroup };
+                                Current++;
+                            }
+                        }
+
+                        AddToResult(Output);
+                    }
+                );
+
+                TwitchAPI.GetFollowers(Channel, function (ErrorHappened, FollowersObject)
+                    {
+                        if (ErrorHappened)
+                        {
+                            AddToResult([]);
+                            return;
+                        }
+                        
+                        let Output = new Array(FollowersObject);
+                        for (let i = 0; i < FollowersObject.length; i++)
+                            Output[i] = { name: FollowersObject[i], inChat: false, isFollower: true, isMod: false };
+
+                        AddToResult(Output);
+                    }
+                );
+
+                function AddToResult (AOutput)
+                {
+                    if (AOutput.length > 0)
+                        Result = Result.concat(AOutput);
+
+                    ResultAddedCounter++;
+
+                    if (ResultAddedCounter >= 2)
+                    {
+                        if (Result.length == 0)
+                            Result = { status: 500 };
+
+                        ACallback(Result);
+                    }
                 }
-            );
+            }
             break;
         default:
             UnknownRequest('Channel->' + AParams.join('/'), ACallback);
@@ -107,11 +159,11 @@ function Channel (AParams, ACallback)
 }
 
 /**
- * Gets the user id by name and saves it in the map.
+ * Creates a channel object, gathers the needes information and adds it to the list.
  * @param {String} AChannelName The name of the channel/user in LOWERCASE.
  * @param {Function} ACallback Called when finished with success as boolean parameter.
  */
-function GetUserIdByName (AChannelName, ACallback)
+function AddChannelToList (AChannelName, ACallback)
 {
     //Get User ID of the channel owner for later use in the Twitch API:
     TwitchAPI.LoginsToIds([AChannelName], function (ErrorHappened, Ids)
@@ -120,25 +172,26 @@ function GetUserIdByName (AChannelName, ACallback)
                 ACallback(false);
             else
             {
-                var User = {
+                var Channel = {
                     Name: AChannelName,
                     Id: Ids[0],
                     Active: true,
+                    Pagination: '',
                     Interval: undefined
                 };
 
-                IdList.set(AChannelName, User);
+                ChannelList.set(AChannelName, Channel);
                 
                 //Use an interval to check if the client lost connection:
-                User.Interval = setInterval(function ()
+                Channel.Interval = setInterval(function ()
                     {
-                        if (!User.Active)
+                        if (!Channel.Active)
                         {
-                            IdList.delete(User.ChannelName);
-                            clearInterval(User.Interval);
+                            ChannelList.delete(Channel.ChannelName);
+                            clearInterval(Channel.Interval);
                         }
                         else
-                            User.Active = false;
+                            Channel.Active = false;
                     },
                     60000
                 );
