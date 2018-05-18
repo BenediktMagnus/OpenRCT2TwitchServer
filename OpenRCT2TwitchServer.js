@@ -6,8 +6,8 @@ const tmi = require("tmi.js");
 Client = new tmi.client({
   identity:
   {
-      username: Config.name,
-      password: Config.oauth
+      username: Config.Name,
+      password: Config.OAuth
   },
   connection:
   {
@@ -39,9 +39,9 @@ Client.connect().then(function ()
             );
         });
 
-        App.listen(Config.port, function()
+        App.listen(Config.Port, function()
         {
-          console.log('\nServer started at *:' + Config.port);
+          console.log('\nServer started at *:' + Config.Port);
         });
     }
 );

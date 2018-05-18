@@ -24,7 +24,7 @@ exports.Initialise = function (AClient)
                 if (ChannelList.has(AChannel))
                 {
                     let Channel = ChannelList.get(AChannel);
-                    if (Channel.Messages.length <= Config.maxMessageCount)
+                    if (Channel.Messages.length <= Config.MaxMessageCount)
                         Channel.Messages.push({ message: Command + ' ' + AData['display-name'] + ':' + AMessage.substr(Command.length) });
                 }
         }

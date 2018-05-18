@@ -1,6 +1,7 @@
 {
-	"name": "BotName",
-	"oauth": "oauth:xxx",
-	"clientid": "abc",
-	"port": 11780
+	"Name": "BotName",
+	"OAuth": "oauth:xxx",
+	"ClientID": "abc",
+	"Port": 11780,
+	"MaxMessageCount": 10
 }

@@ -36,7 +36,7 @@ exports.GetFollowers = function (AChannel, ACallback)
     Client.api({
         url: 'https://api.twitch.tv/helix/users/follows?to_id=' + AChannel.Id + '&first=' + MaxElements + Pagination,
         headers: {
-            'Client-ID': Config.clientid
+            'Client-ID': Config.ClientID
         }
     }, function (Err, Res, Body)
         {
@@ -88,7 +88,7 @@ function GetLoginOrId (ALoginOrIdList, AParameterString, ACallback)
     Client.api({
         url: 'https://api.twitch.tv/helix/users?' + CombinedParameterString,
         headers: {
-            'Client-ID': Config.clientid
+            'Client-ID': Config.ClientID
         }
     }, function (Err, Res, Body)
         {
