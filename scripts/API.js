@@ -22,8 +22,11 @@ exports.Initialise = function (AClient)
             //Skip irrelevant messages:
             if (!AIsOwnMessage && AMessage.startsWith('!') && (AMessage.length > Command.length + 1) && AMessage.startsWith(Command + ' '))
                 if (ChannelList.has(AChannel))
-                    ChannelList.get(AChannel).Messages.push({ message: AMessage });
-
+                {
+                    let Channel = ChannelList.get(AChannel);
+                    if (Channel.Messages.length <= Config.maxMessageCount)
+                        Channel.Messages.push({ message: AMessage });
+                }
         }
     );
 };
