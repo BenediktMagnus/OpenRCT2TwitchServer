@@ -11,9 +11,7 @@ By default, the game tries to use the server on *openrct.ursalabs.co*, which is 
 You can get an OAuth token from here: https://twitchapps.com/tmi/  
 And how to get the client id is descriped here: https://blog.twitch.tv/client-id-required-for-kraken-api-calls-afbb8e95f843  
 
-2. Add this line to your hosts file to make OpenRCT2 use your server as Twitch integration server: `<IP of your server> openrct.ursalabs.co`.
-On Linux, you can find your hosts file under `/etc/hosts`.  
-On Windows, it is located under `C:\Windows\System32\drivers\etc\hosts`.  
+2. Set your server's API URL in OpenRCT2's options (see https://github.com/OpenRCT2/OpenRCT2/pull/7555)
 
 3. Start the server with [Node.JS](https://nodejs.org): `node OpenRCT2TwitchServer.js`.
 
